@@ -1,0 +1,20 @@
+{
+    "name": "acou/hyperf-study",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Src\\": "src/",
+            "App\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "acou",
+            "email": "zhengyuyu@kkguan.com"
+        }
+    ],
+    "require": {
+        "symfony/console": "^6.0",
+        "symfony/finder": "^6.0"
+    }
+}
