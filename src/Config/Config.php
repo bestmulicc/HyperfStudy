@@ -11,6 +11,9 @@ class Config implements ConfigInterface
      */
     private $configs = [];
 
+    /**
+     * @param array $configs
+     */
     public function __construct(array $configs)
     {
         $this->configs = $configs;
