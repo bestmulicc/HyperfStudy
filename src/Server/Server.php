@@ -2,6 +2,7 @@
 
 namespace Src\Server;
 
+use Src\HttpServer\Router\DispatcherFactory;
 use Swoole\Coroutine\Server as SwooleCoServer;
 use Swoole\Server as SwooleServer;
 use Swoole\Http\Server as SwooleHttpServer;
@@ -43,7 +44,11 @@ class Server implements ServerInterface
     {
         foreach ($callbacks as $swooleEvent => $callback) {
             list($class,$method) = $callback;
-            $instance = new $class();
+            if($class === \Src\HttpServer\Server::class){
+                $instance = new $class(new DispatcherFactory());
+            } else {
+                $instance = new $class();
+            }
             $this->server->on($swooleEvent, [$instance,$method]);
         }
     }
