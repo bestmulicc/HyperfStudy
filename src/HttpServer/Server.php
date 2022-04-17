@@ -7,13 +7,19 @@ use FastRoute\RouteCollector;
 use Hyperf\Utils\Context;
 use Hyperf\Utils\Str;
 use Src\Config\Config;
+use Src\Config\ConfigFactory;
+use Src\Dispatcher\HttpRequestHandler;
 use Src\HttpServer\Contract\CoreMiddlewareInterface;
+use Src\HttpServer\Router\Dispatched;
+use Src\HttpServer\Router\DispatcherFactory;
 use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
 use Hyperf\HttpMessage\Server\Response as Psr7Response;
 use Hyperf\HttpMessage\Server\Request as Psr7Request;
 use function FastRoute\simpleDispatcher;
 use FastRoute\Dispatcher;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 class Server
 {
 //    /**
@@ -29,12 +35,27 @@ class Server
      * @var CoreMiddlewareInterface
      */
     protected $coreMiddleware;
+
+    /**
+     * @var DispatcherFactory
+     */
+    protected $dispatcherFactory;
+
+    protected $globalMiddlewares;
+
     public function __construct(Router\DispatcherFactory $dispatcherFactory)
     {
-        $this->dispatcher = $dispatcherFactory->getDispathcer('http');
-        $this->coreMiddleware = new CoreMiddleware($dispatcherFactory);
+        $this->dispatcherFactory = $dispatcherFactory;
+        $this->dispatcher = $this->dispatcherFactory->getDispathcer('http');
     }
 
+    public function initCoreMiddleware()
+    {
+        $config = (new ConfigFactory())();
+        $this->globalMiddlewares = $config->get('middlewares');
+        $this->coreMiddleware = new CoreMiddleware($this->dispatcherFactory);
+
+    }
 
     public function onRequest(SwooleRequest $request,SwooleResponse $response)
     {
@@ -43,11 +64,44 @@ class Server
         /** @var Psr\Http\Message\ResponseInterface $psr7Response */
         [$psr7Request,$psr7Response] = $this->initRequestAndResponse($request,$response);
 
+        $psr7Request = $this->coreMiddleware->dispatch($psr7Request);
+
         $httpMethod = $psr7Request->getMethod();
         $uri = $psr7Request->getUri()->getPath();
-//        var_dump($method,$path);
 
-//      1,从routes中获取
+        $middlewares = $this->globalMiddlewares ?? [] ;
+
+        $dispatched = $psr7Request->getAttribute(Dispatched::class);
+        if ($dispatched instanceof Dispatched && $dispatched->isFound()) {
+            $registeredMiddlewares = MiddlewareManager::get($uri, $httpMethod) ?? [];
+            $middlewares = array_merge($middlewares,$registeredMiddlewares);
+        }
+        $requestHandler = new HttpRequestHandler($middlewares, $this->coreMiddleware);
+        $psr7Response = $requestHandler->handle($psr7Request);
+
+        /*
+         * Headers
+         */
+        foreach ($psr7Response->getHeaders() as $key => $value) {
+            $response->header($key, implode(';', $value));
+        }
+        /*
+         * Status code
+         */
+        $response->status($psr7Response->getStatusCode());
+        $response->end($psr7Response->getBody()->getContents());
+        var_dump('response end');
+    }
+
+    protected function initRequestAndResponse(SwooleRequest $request,SwooleResponse $response):array
+    {
+        Context::set(ResponseInterface::class,$psr7Response = new Psr7Response());
+        Context::set(ServerRequestInterface::class,$psr7Request = Psr7Request::loadFromSwooleRequest($request));
+        return [$psr7Request,$psr7Response];
+    }
+
+    //        var_dump($method,$path);
+//      1,从routes.php中获取
 //        $routes = require BASE_PATH.'/config/routes.php';
 //        $result = '';
 //        foreach ($routes as $route){
@@ -78,6 +132,7 @@ class Server
 //        $result = $instance->$method();
 
 
+//          3，dispatcher
 //        $routes = $this->config->get('routes');
 //        $dispatcher = simpleDispatcher(function (RouteCollector $routeCollector) use ($routes) {
 //            foreach ($routes as $route){
@@ -85,36 +140,25 @@ class Server
 //                $routeCollector->addRoute($httpMethod , $path, $handler);
 //            }
 //        });
-
-        $psr7Request = $this->coreMiddleware->dispatch($psr7Request);
-        $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
-        switch ($routeInfo[0]) {
-            case Dispatcher::NOT_FOUND:
-                $response->status(404);
-                $response->end("NOT FOUND");
-                break;
-            case Dispatcher::METHOD_NOT_ALLOWED:
-                $allowedMethods = $routeInfo[1];
-                $response->status(405);
-                $response->header('Method-Allows',implode(',',$allowedMethods));
-                $response->end();
-                break;
-            case Dispatcher::FOUND:
-                $handler = $routeInfo[1];
-                $vars = $routeInfo[2];
-                [$controller, $action] = $handler;
-                $instance = new $controller();
-                $result = $instance->$action(...$vars);
-                $response->end($result);
-                break;
-        }
-
-    }
-
-    protected function initRequestAndResponse(SwooleRequest $request,SwooleResponse $response):array
-    {
-        Context::set(ResponseInterface::class,$psr7Response = new Psr7Response());
-        Context::set(ServerRequestInterface::class,$psr7Request = Psr7Request::loadFromSwooleRequest($request));
-        return [$psr7Request,$psr7Response];
-    }
+//        $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
+//        switch ($routeInfo[0]) {
+//            case Dispatcher::NOT_FOUND:
+//                $response->status(404);
+//                $response->end("NOT FOUND");
+//                break;
+//            case Dispatcher::METHOD_NOT_ALLOWED:
+//                $allowedMethods = $routeInfo[1];
+//                $response->status(405);
+//                $response->header('Method-Allows',implode(',',$allowedMethods));
+//                $response->end();
+//                break;
+//            case Dispatcher::FOUND:
+//                $handler = $routeInfo[1];
+//                $vars = $routeInfo[2];
+//                [$controller, $action] = $handler;
+//                $instance = new $controller();
+//                $result = $instance->$action(...$vars);
+//                $response->end($result);
+//                break;
+//        }
 }

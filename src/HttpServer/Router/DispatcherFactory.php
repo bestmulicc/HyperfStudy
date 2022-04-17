@@ -4,6 +4,7 @@ namespace Src\HttpServer\Router;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use Src\HttpServer\MiddlewareManager;
 use function FastRoute\simpleDispatcher;
 
 class DispatcherFactory
@@ -35,7 +36,13 @@ class DispatcherFactory
             $this->dispatchers[$serverName] = simpleDispatcher(function (RouteCollector $routeCollector){
                 foreach ($this->routes as $route){
                     [$httpMethod , $path, $handler] = $route;
+                    if (isset($route[3])){
+                        $options = $route[3];
+                    }
                     $routeCollector->addRoute($httpMethod , $path, $handler);
+                    if (isset($options['middlewares']) && is_array($options['middlewares'])){
+                        MiddlewareManager::addMiddlewares($path,$httpMethod,$options['middlewares']);
+                    }
                 }
             });
         }

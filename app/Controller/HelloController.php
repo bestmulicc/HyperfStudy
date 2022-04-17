@@ -28,6 +28,7 @@ class HelloController
 //    {
 //        return 'Hyperf Hello';
 //    }
+
     public function index()
     {
         return 'Hello Hyperf';
