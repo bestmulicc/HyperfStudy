@@ -20,6 +20,7 @@ use function FastRoute\simpleDispatcher;
 use FastRoute\Dispatcher;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+
 class Server
 {
 //    /**
@@ -41,6 +42,7 @@ class Server
      */
     protected $dispatcherFactory;
 
+    //储存从配置文件读取出来的中间件的地方
     protected $globalMiddlewares;
 
     public function __construct(Router\DispatcherFactory $dispatcherFactory)
@@ -51,8 +53,11 @@ class Server
 
     public function initCoreMiddleware()
     {
+        //调用ConfigFactory中的invoke方法，返回一个Config对象
         $config = (new ConfigFactory())();
+        //调用Config对象中的get方法，获取配置文件中的全局middlewares信息
         $this->globalMiddlewares = $config->get('middlewares');
+
         $this->coreMiddleware = new CoreMiddleware($this->dispatcherFactory);
 
     }
@@ -64,18 +69,25 @@ class Server
         /** @var Psr\Http\Message\ResponseInterface $psr7Response */
         [$psr7Request,$psr7Response] = $this->initRequestAndResponse($request,$response);
 
+        //读取请求中的uri，httpmethod，与本地路由匹配，增加状态码并返回
         $psr7Request = $this->coreMiddleware->dispatch($psr7Request);
 
         $httpMethod = $psr7Request->getMethod();
         $uri = $psr7Request->getUri()->getPath();
 
+        //获取全局中间件信息
         $middlewares = $this->globalMiddlewares ?? [] ;
 
+        //$dispatched获取处理过后的请求信息，包含状态码以及handler方法
         $dispatched = $psr7Request->getAttribute(Dispatched::class);
+
+        //判断是否找到路由，并检索局部中间件信息，合并为$middlewares数组
         if ($dispatched instanceof Dispatched && $dispatched->isFound()) {
             $registeredMiddlewares = MiddlewareManager::get($uri, $httpMethod) ?? [];
             $middlewares = array_merge($middlewares,$registeredMiddlewares);
         }
+
+        //执行所有匹配的中间件
         $requestHandler = new HttpRequestHandler($middlewares, $this->coreMiddleware);
         $psr7Response = $requestHandler->handle($psr7Request);
 

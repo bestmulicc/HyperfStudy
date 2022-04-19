@@ -2,6 +2,11 @@
 
 namespace Src\HttpServer;
 
+/*
+ * Hyperf的核心中间件，主要负责处理路由信息
+ * 然后委托给指定的handler（也就是Controller）来处理请求，
+ * 生成一个响应对象并委托给下一个中间件（因为这个中间件是核心中间件，那么下一个中间件也意味着它是前一个中间件对象）。
+ */
 use FastRoute\Dispatcher;
 use Hyperf\HttpMessage\Stream\SwooleStream;
 use Hyperf\Utils\Codec\Json;
@@ -42,8 +47,11 @@ class CoreMiddleware implements CoreMiddlewareInterface
         return $request;
     }
 
+    //处理传入的服务器请求并返回响应，可选择委派
+    //对处理程序的响应创建。
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        //获取request中的dispatched对象
         $dispatched = $request->getAttribute(Dispatched::class);
         if (! $dispatched instanceof Dispatched) {
             throw new \InvalidArgumentException('Route not found');
@@ -80,6 +88,7 @@ class CoreMiddleware implements CoreMiddlewareInterface
     protected function handleFound(ServerRequestInterface $request, Dispatched $dispatched)
     {
         [$controller, $action] = $dispatched->handler;
+        var_dump($controller);
         if (! class_exists($controller)) {
             throw new \InvalidArgumentException('Controller not exist');
         }

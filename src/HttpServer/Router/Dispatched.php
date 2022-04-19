@@ -23,7 +23,7 @@ class Dispatched
     public $params = [];
 
     /**
-     * Dispatches against the provided HTTP method verb and URI.
+     * 针对提供的 HTTP 方法动词和 URI 进行调度。
      *
      * @param array $array with one of the following formats:
      *

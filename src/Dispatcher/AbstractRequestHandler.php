@@ -28,6 +28,7 @@ abstract class AbstractRequestHandler implements RequestHandlerInterface
 
     protected function handleRequest($request)
     {
+        var_dump($this->middlewares);
         if (! isset($this->middlewares[$this->offset]) && ! empty($this->coreHandler)) {
             $handler = $this->coreHandler;
         } else {

@@ -1,7 +1,9 @@
 <?php
 
 namespace Src\HttpServer\Router;
-
+/*
+ * 获取配置文件中的routes信息，返回一个dispatcher对象
+ */
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use Src\HttpServer\MiddlewareManager;

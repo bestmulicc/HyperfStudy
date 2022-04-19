@@ -13,7 +13,7 @@ object(Hyperf\HttpMessage\Server\Request)#88 (16) {
     ["port":"Hyperf\HttpMessage\Uri\Uri":private]=>
     int(9601)
     ["path":"Hyperf\HttpMessage\Uri\Uri":private]=>
-    string(12) "/hello/index"
+    string(9) "/helxxxxx"
     ["query":"Hyperf\HttpMessage\Uri\Uri":private]=>
     string(0) ""
     ["fragment":"Hyperf\HttpMessage\Uri\Uri":private]=>
@@ -79,23 +79,23 @@ object(Hyperf\HttpMessage\Server\Request)#88 (16) {
       ["request_method"]=>
       string(3) "GET"
       ["request_uri"]=>
-      string(12) "/hello/index"
+      string(9) "/helxxxxx"
       ["path_info"]=>
-      string(12) "/hello/index"
+      string(9) "/helxxxxx"
       ["request_time"]=>
-      int(1650253100)
+      int(1650253121)
       ["request_time_float"]=>
-      float(1650253100.390642)
+      float(1650253121.247524)
       ["server_protocol"]=>
       string(8) "HTTP/1.1"
       ["server_port"]=>
       int(9601)
       ["remote_port"]=>
-      int(46072)
+      int(46074)
       ["remote_addr"]=>
       string(9) "127.0.0.1"
       ["master_time"]=>
-      int(1650253100)
+      int(1650253121)
     }
     ["cookie"]=>
     NULL
@@ -113,14 +113,9 @@ object(Hyperf\HttpMessage\Server\Request)#88 (16) {
     ["Src\HttpServer\Router\Dispatched"]=>
     object(Src\HttpServer\Router\Dispatched)#86 (3) {
       ["status"]=>
-      int(1)
+      int(0)
       ["handler"]=>
-      array(2) {
-        [0]=>
-        string(30) "App\Controller\HelloController"
-        [1]=>
-        string(5) "index"
-      }
+      NULL
       ["params"]=>
       array(0) {
       }
@@ -140,23 +135,23 @@ object(Hyperf\HttpMessage\Server\Request)#88 (16) {
     ["request_method"]=>
     string(3) "GET"
     ["request_uri"]=>
-    string(12) "/hello/index"
+    string(9) "/helxxxxx"
     ["path_info"]=>
-    string(12) "/hello/index"
+    string(9) "/helxxxxx"
     ["request_time"]=>
-    int(1650253100)
+    int(1650253121)
     ["request_time_float"]=>
-    float(1650253100.390642)
+    float(1650253121.247524)
     ["server_protocol"]=>
     string(8) "HTTP/1.1"
     ["server_port"]=>
     int(9601)
     ["remote_port"]=>
-    int(46072)
+    int(46074)
     ["remote_addr"]=>
     string(9) "127.0.0.1"
     ["master_time"]=>
-    int(1650253100)
+    int(1650253121)
   }
   ["uploadedFiles":"Hyperf\HttpMessage\Server\Request":private]=>
   array(0) {
