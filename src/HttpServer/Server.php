@@ -74,7 +74,6 @@ class Server
 
         $httpMethod = $psr7Request->getMethod();
         $uri = $psr7Request->getUri()->getPath();
-
         //获取全局中间件信息
         $middlewares = $this->globalMiddlewares ?? [] ;
 
