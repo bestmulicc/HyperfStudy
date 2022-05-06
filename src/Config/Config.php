@@ -4,6 +4,7 @@ namespace Src\Config;
 
 use Src\Contract\ConfigInterface;
 
+//Config，对外提供获取配置文件信息的方法
 class Config implements ConfigInterface
 {
     /**

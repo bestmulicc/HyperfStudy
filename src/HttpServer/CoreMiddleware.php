@@ -30,7 +30,7 @@ class CoreMiddleware implements CoreMiddlewareInterface
 
     public function __construct(DispatcherFactory $dispatcherFactory)
     {
-        $this->dispatcher = $dispatcherFactory->getDispathcer('http');
+        $this->dispatcher = $dispatcherFactory->getDispatcher('http');
     }
 
     public function dispatch(ServerRequestInterface $request): ServerRequestInterface
@@ -88,7 +88,6 @@ class CoreMiddleware implements CoreMiddlewareInterface
     protected function handleFound(ServerRequestInterface $request, Dispatched $dispatched)
     {
         [$controller, $action] = $dispatched->handler;
-        var_dump($controller);
         if (! class_exists($controller)) {
             throw new \InvalidArgumentException('Controller not exist');
         }

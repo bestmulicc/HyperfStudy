@@ -2,6 +2,8 @@
 
 namespace Src\Server;
 
+use Psr\Container\ContainerInterface;
+use Src\Exception\ExceptionHandlerDispatcher;
 use Src\HttpServer\Router\DispatcherFactory;
 use Swoole\Coroutine\Server as SwooleCoServer;
 use Swoole\Server as SwooleServer;
@@ -19,6 +21,15 @@ class Server implements ServerInterface
      */
     protected $onRequestCallbacks = [];
 
+//    /**
+//     * @var ContainerInterface
+//     */
+//    protected $container;
+//
+//    public function __construct(ContainerInterface $container)
+//    {
+//        $this->container = $container;
+//    }
     public function init(array $config): ServerInterface
     {
         foreach ($config['servers'] as $server){
@@ -45,7 +56,7 @@ class Server implements ServerInterface
         foreach ($callbacks as $swooleEvent => $callback) {
             list($class,$method) = $callback;
             if($class === \Src\HttpServer\Server::class){
-                $instance = new $class(new DispatcherFactory());
+                $instance = new $class(new DispatcherFactory(),new ExceptionHandlerDispatcher());
             } else {
                 $instance = new $class();
             }

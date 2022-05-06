@@ -2,6 +2,8 @@
 
 namespace Src\Server;
 
+use Psr\Container\ContainerInterface;
+
 class ServerFactory
 {
     /**
@@ -13,6 +15,16 @@ class ServerFactory
      * @var Server
      */
     protected $server;
+
+//    /**
+//     * @var ContainerInterface
+//     */
+//    protected $container;
+
+//    public function __construct(ContainerInterface $container)
+//    {
+//        $this->container = $container;
+//    }
     public function configure(array $configs)
     {
         $this->serverConfig = $configs;

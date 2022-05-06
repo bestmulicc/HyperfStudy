@@ -4,6 +4,7 @@ namespace Src\Config;
 
 use Symfony\Component\Finder\Finder;
 
+//配置文件工厂，读取config文件中的所有配置文件，将其实例化成一个Config对象
 class ConfigFactory
 {
     public function __invoke()

@@ -4,12 +4,14 @@ namespace Src\HttpServer;
 
 
 use FastRoute\RouteCollector;
+use Hyperf\HttpMessage\Server\Connection\SwooleConnection;
 use Hyperf\Utils\Context;
 use Hyperf\Utils\Str;
 use Src\Config\Config;
 use Src\Config\ConfigFactory;
 use Src\Dispatcher\HttpRequestHandler;
 use Src\HttpServer\Contract\CoreMiddlewareInterface;
+use Src\HttpServer\Exception\Handler\HttpExceptionHandler;
 use Src\HttpServer\Router\Dispatched;
 use Src\HttpServer\Router\DispatcherFactory;
 use Swoole\Http\Request as SwooleRequest;
@@ -20,13 +22,10 @@ use function FastRoute\simpleDispatcher;
 use FastRoute\Dispatcher;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Src\Exception\ExceptionHandlerDispatcher;
 
 class Server
 {
-//    /**
-//     * @var Config;
-//     */
-//    protected $config;
     /**
      * @var Dispatcher;
      */
@@ -42,13 +41,23 @@ class Server
      */
     protected $dispatcherFactory;
 
+    /**
+     * @var ExceptionHandlerDispatcher
+     */
+    protected $exceptionHandlerDispatcher;
+
+    /**
+     * @var array
+     */
+    protected $exceptionHandlers;
     //储存从配置文件读取出来的中间件的地方
     protected $globalMiddlewares;
 
-    public function __construct(Router\DispatcherFactory $dispatcherFactory)
+    public function __construct(Router\DispatcherFactory $dispatcherFactory, ExceptionHandlerDispatcher $exceptionHandlerDispatcher)
     {
         $this->dispatcherFactory = $dispatcherFactory;
-        $this->dispatcher = $this->dispatcherFactory->getDispathcer('http');
+        $this->dispatcher = $this->dispatcherFactory->getDispatcher('http');
+        $this->exceptionHandlerDispatcher = $exceptionHandlerDispatcher;
     }
 
     public function initCoreMiddleware()
@@ -57,60 +66,82 @@ class Server
         $config = (new ConfigFactory())();
         //调用Config对象中的get方法，获取配置文件中的全局middlewares信息
         $this->globalMiddlewares = $config->get('middlewares');
-
+        $this->exceptionHandlers = $config->get('exceptions',$this->getDefaultExceptionHandler());
         $this->coreMiddleware = new CoreMiddleware($this->dispatcherFactory);
-
     }
 
     public function onRequest(SwooleRequest $request,SwooleResponse $response)
     {
-        //初始化Psr7的Request，Response对象
-        /** @var Psr\Http\Message\RequestInterface $psr7Request */
-        /** @var Psr\Http\Message\ResponseInterface $psr7Response */
-        [$psr7Request,$psr7Response] = $this->initRequestAndResponse($request,$response);
+        try {
+            //初始化Psr7的Request，Response对象
+            /** @var Psr\Http\Message\RequestInterface $psr7Request */
+            /** @var Psr\Http\Message\ResponseInterface $psr7Response */
+            [$psr7Request, $psr7Response] = $this->initRequestAndResponse($request, $response);
 
-        //读取请求中的uri，httpmethod，与本地路由匹配，增加状态码并返回
-        $psr7Request = $this->coreMiddleware->dispatch($psr7Request);
+            //读取请求中的uri，httpmethod，与本地路由匹配，增加状态码并返回
+            $psr7Request = $this->coreMiddleware->dispatch($psr7Request);
 
-        $httpMethod = $psr7Request->getMethod();
-        $uri = $psr7Request->getUri()->getPath();
-        //获取全局中间件信息
-        $middlewares = $this->globalMiddlewares ?? [] ;
+            $httpMethod = $psr7Request->getMethod();
+            $uri = $psr7Request->getUri()->getPath();
+            //获取全局中间件信息
+            $middlewares = $this->globalMiddlewares ?? [];
 
-        //$dispatched获取处理过后的请求信息，包含状态码以及handler方法
-        $dispatched = $psr7Request->getAttribute(Dispatched::class);
+            //$dispatched获取处理过后的请求信息，包含状态码以及handler方法
+            $dispatched = $psr7Request->getAttribute(Dispatched::class);
 
-        //判断是否找到路由，并检索局部中间件信息，合并为$middlewares数组
-        if ($dispatched instanceof Dispatched && $dispatched->isFound()) {
-            $registeredMiddlewares = MiddlewareManager::get($uri, $httpMethod) ?? [];
-            $middlewares = array_merge($middlewares,$registeredMiddlewares);
+            //判断是否找到路由，并检索局部中间件信息，合并为$middlewares数组
+            if ($dispatched instanceof Dispatched && $dispatched->isFound()) {
+                $registeredMiddlewares = MiddlewareManager::get($uri, $httpMethod) ?? [];
+                $middlewares = array_merge($middlewares, $registeredMiddlewares);
+            }
+
+            //执行所有匹配的中间件
+            $requestHandler = new HttpRequestHandler($middlewares, $this->coreMiddleware);
+
+            $psr7Response = $requestHandler->handle($psr7Request);
+
+            /*
+             * Headers
+             */
+            foreach ($psr7Response->getHeaders() as $key => $value) {
+                $response->header($key, implode(';', $value));
+            }
+            /*
+             * Status code
+             */
+            $response->status($psr7Response->getStatusCode());
+            $response->end($psr7Response->getBody()->getContents());
+        } catch (\Throwable $throwable) {
+            $psr7Response = $this->exceptionHandlerDispatcher->dispatch($throwable, $this->exceptionHandlers);
+            $response->status($psr7Response->getStatusCode());
+            $response->end($psr7Response->getBody()->getContents());
         }
-
-        //执行所有匹配的中间件
-        $requestHandler = new HttpRequestHandler($middlewares, $this->coreMiddleware);
-        $psr7Response = $requestHandler->handle($psr7Request);
-
-        /*
-         * Headers
-         */
-        foreach ($psr7Response->getHeaders() as $key => $value) {
-            $response->header($key, implode(';', $value));
-        }
-        /*
-         * Status code
-         */
-        $response->status($psr7Response->getStatusCode());
-        $response->end($psr7Response->getBody()->getContents());
-        var_dump('response end');
     }
 
     protected function initRequestAndResponse(SwooleRequest $request,SwooleResponse $response):array
     {
-        Context::set(ResponseInterface::class,$psr7Response = new Psr7Response());
-        Context::set(ServerRequestInterface::class,$psr7Request = Psr7Request::loadFromSwooleRequest($request));
-        return [$psr7Request,$psr7Response];
+//        Context::set(ResponseInterface::class,$psr7Response = new Psr7Response());
+//        Context::set(ServerRequestInterface::class,$psr7Request = Psr7Request::loadFromSwooleRequest($request));
+//        return [$psr7Request,$psr7Response];
+        Context::set(ResponseInterface::class, $psr7Response = new Psr7Response());
+
+        if ($request instanceof ServerRequestInterface) {
+            $psr7Request = $request;
+        } else {
+            $psr7Request = Psr7Request::loadFromSwooleRequest($request);
+            $psr7Response->setConnection(new SwooleConnection($response));
+        }
+
+        Context::set(ServerRequestInterface::class, $psr7Request);
+        return [$psr7Request, $psr7Response];
     }
 
+    protected function getDefaultExceptionHandler():array
+    {
+        return [
+            HttpExceptionHandler::class,
+        ];
+    }
     //        var_dump($method,$path);
 //      1,从routes.php中获取
 //        $routes = require BASE_PATH.'/config/routes.php';

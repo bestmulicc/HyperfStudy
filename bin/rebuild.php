@@ -11,6 +11,7 @@ require BASE_PATH.'/vendor/autoload.php';
 
 $application = new Application();
 $config = new ConfigFactory();
+//调用一次ConfigFactory，表示执行了ConfigFactory中的invoke魔术方法
 $config = $config();
 //var_dump($config);
 $commands = $config->get('commands');

@@ -8,4 +8,6 @@ return [
         ]
     ]],
     ['GET','/hello/hyperf',[\App\Controller\HelloController::class,'hyperf']],
+    ['GET','/hello/num',[\App\Controller\HelloController::class,'num']],
+    ['GET','/ex',[\App\Controller\ExController::class,'exception']],
 ];

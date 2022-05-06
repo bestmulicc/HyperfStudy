@@ -17,7 +17,6 @@ class MiddlewareA implements MiddlewareInterface
         defer(function () {
             var_dump('defer');
         });
-        var_dump(__CLASS__);
         $path = $request->getUri()->getPath();
         if ($path === '/hello/hyperf') {
             return Context::get(ResponseInterface::class)->withStatus(401)->withBody(new SwooleStream('Not allow'));

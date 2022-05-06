@@ -2,6 +2,10 @@
 
 namespace App\Controller;
 
+
+
+use Src\HttpServer\Contract\RequestInterface;
+
 class HelloController
 {
 //      1,从routes中获取
@@ -36,5 +40,11 @@ class HelloController
     public function hyperf()
     {
         return 'Hyperf Hello';
+    }
+
+    public function test(RequestInterface $request)
+    {
+        $num = $request->input('num');
+        return $num;
     }
 }

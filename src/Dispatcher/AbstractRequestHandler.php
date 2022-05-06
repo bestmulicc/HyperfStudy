@@ -2,7 +2,7 @@
 
 namespace Src\Dispatcher;
 
-use Hyperf\Dispatcher\Exceptions\InvalidArgumentException;
+use Exception;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
@@ -28,7 +28,7 @@ abstract class AbstractRequestHandler implements RequestHandlerInterface
 
     protected function handleRequest($request)
     {
-        var_dump($this->middlewares);
+//        var_dump($this->middlewares);
         if (! isset($this->middlewares[$this->offset]) && ! empty($this->coreHandler)) {
             $handler = $this->coreHandler;
         } else {
@@ -38,7 +38,7 @@ abstract class AbstractRequestHandler implements RequestHandlerInterface
 
         }
         if (! method_exists($handler, 'process')) {
-            throw new InvalidArgumentException(sprintf('Invalid middleware, it has to provide a process() method.'));
+            throw new Exception(sprintf('Invalid middleware, it has to provide a process() method.'));
         }
         return $handler->process($request, $this->next());
     }

@@ -32,7 +32,7 @@ class DispatcherFactory
     }
 
 
-    public function getDispathcer(string $serverName):Dispatcher
+    public function getDispatcher(string $serverName):Dispatcher
     {
         if (! isset($this->dispatchers[$serverName])){
             $this->dispatchers[$serverName] = simpleDispatcher(function (RouteCollector $routeCollector){
