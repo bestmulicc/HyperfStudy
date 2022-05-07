@@ -9,5 +9,6 @@ return [
     ]],
     ['GET','/hello/hyperf',[\App\Controller\HelloController::class,'hyperf']],
     ['GET','/hello/num',[\App\Controller\HelloController::class,'num']],
-    ['GET','/ex',[\App\Controller\ExController::class,'exception']],
+    ['GET','/ex/A',[\App\Controller\ExController::class,'exceptionA']],
+    ['GET','/ex/B',[\App\Controller\ExController::class,'exceptionB']]
 ];

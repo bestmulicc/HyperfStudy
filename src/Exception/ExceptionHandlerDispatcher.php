@@ -26,6 +26,9 @@ class ExceptionHandlerDispatcher extends AbstractExceptionDispatcher
          * @param string[] $handler
          */
         [$throwable,$handlers] = $params;
+        var_dump($throwable);
+        var_dump('--------------');
+        var_dump($handlers);
         $response = Context::get(ResponseInterface::class);
         foreach ($handlers as $handler){
 //            //判断异常处理器是否存在有效
@@ -34,7 +37,7 @@ class ExceptionHandlerDispatcher extends AbstractExceptionDispatcher
 //            }
             //从容器中取出处理器实体
             $handlerInstance = new $handler();
-            if (! $handlerInstance instanceof ExceptionHandler || $handlerInstance->isValid($throwable)){
+            if (! $handlerInstance instanceof ExceptionHandler || ! $handlerInstance->isValid($throwable)){
                 continue;
             }
             $response = $handlerInstance->handle($throwable, $response);
